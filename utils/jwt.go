@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -11,13 +12,14 @@ import (
 
 var secretKey = []byte("itsmysecrectkey9310") 
 
-func GenerateJWT(userID uuid.UUID, email string) (string, error) {
+func GenerateJWT(userID uuid.UUID, name string) (string, error) {
 	claims := jwt.MapClaims{
 		"exp":  time.Now().Add(24 * time.Hour).Unix(),
 		"iss":  "invertory",
 		"userID":  userID,
-		"email": email,
+		"email": name,
 	}
+	fmt.Println("+++++++++++++++++++++++++++++++++>USERID",userID)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 

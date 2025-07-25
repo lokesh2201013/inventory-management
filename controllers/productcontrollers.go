@@ -7,21 +7,22 @@ import (
 	"github.com/lokesh2201013/database"
 	"github.com/lokesh2201013/models"
 	"go.uber.org/zap"
+	"fmt"
 )
 
 // ProductInsert godoc
-// @Summary      Insert a new product
-// @Description  Create a new product linked to the logged-in user
+// @Summary      Add a new product
+// @Description  Adds a new product to the database
 // @Tags         Products
 // @Accept       json
 // @Produce      json
+// @Param        product body models.Product true "Product Info"
+// @Success      201 {object} map[string]interface{} "Created Successfully"
+// @Failure      400 {object} map[string]string "Invalid input or fields"
+// @Failure      401 {object} map[string]string "Unauthorized"
+// @Failure      500 {object} map[string]string "Internal server error"
 // @Security     BearerAuth
-// @Param        product  body      models.Product  true  "Product Info"
-// @Success      201  {object}  map[string]interface{}
-// @Failure      400  {object}  map[string]string
-// @Failure      401  {object}  map[string]string
-// @Router       /products/ [post]
-
+// @Router       /products [post]
 func ProductInsert(c *fiber.Ctx) error {
 	const file = "ProductController"
 	var product models.Product
@@ -37,8 +38,26 @@ func ProductInsert(c *fiber.Ctx) error {
 		)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid product fields"})
 	}
+	userIDStr, ok := c.Locals("userID").(string)
+if !ok {
+	logger.Log.Error("Package controllers File "+file,
+		zap.String("Function", "ProductInsert"),
+		zap.String("Message", "userID not found or not a string"),
+	)
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
+}
 
-	userID, ok := c.Locals("userID").(uuid.UUID)
+userID, err := uuid.Parse(userIDStr)
+if err != nil {
+	logger.Log.Error("Package controllers File "+file,
+		zap.String("Function", "ProductInsert"),
+		zap.String("Message", "Invalid UUID format in userID"),
+		zap.Error(err),
+	)
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID format"})
+}
+
+  
 	if !ok {
 		logger.Log.Error("Package controllers File "+file,zap.String("Function", "ProductInsert"),zap.String("Message", "Invalid user ID in context"),)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
@@ -64,14 +83,14 @@ func ProductInsert(c *fiber.Ctx) error {
 // @Tags         Products
 // @Accept       json
 // @Produce      json
+// @Param        id     path      string                     true  "Product ID (UUID)"
+// @Param        input  body      models.QuantityUpdateRequest true  "Quantity Update Payload"
+// @Success      200    {object}  models.Product
+// @Failure      400    {object}  map[string]string "Invalid input"
+// @Failure      404    {object}  map[string]string "Product not found"
+// @Failure      500    {object}  map[string]string "Internal server error"
 // @Security     BearerAuth
-// @Param        id      path      string              true  "Product ID"
-// @Param        input   body      map[string]int      true  "Quantity Input"
-// @Success      200     {object}  models.Product
-// @Failure      400     {object}  map[string]string
-// @Failure      404     {object}  map[string]string
 // @Router       /products/{id}/quantity [put]
-
 func UpdateQuantity(c *fiber.Ctx) error {
 	const file = "ProductController"
 	productID := c.Params("id")
@@ -84,13 +103,16 @@ func UpdateQuantity(c *fiber.Ctx) error {
 		logger.Log.Error("Package controllers File "+file,zap.String("Function", "UpdateQuantity"),zap.String("Message", "Failed to parse input"),zap.Error(err),)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
 	}
-
+ if input.Quantity<0 {
+    	logger.Log.Error("Package controllers File "+file,zap.String("Function", "UpdateQuantity"),zap.String("Message", "Quantity is lees < 0"),zap.String("product_id", productID),)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Quantity invalid"})
+	}
 	var product models.Product
 	if err := database.DB.First(&product, "id = ?", productID).Error; err != nil {
 		logger.Log.Error("Package controllers File "+file,zap.String("Function", "UpdateQuantity"),zap.String("Message", "Product not found"),zap.String("product_id", productID),)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Product not found"})
 	}
-
+   
 	product.Quantity = input.Quantity
 
 	if err := database.DB.Save(&product).Error; err != nil {
@@ -110,19 +132,45 @@ func UpdateQuantity(c *fiber.Ctx) error {
 
 // GetAllUserProduct godoc
 // @Summary      Get all user products
-// @Description  Get paginated list of products created by the user
+// @Description  Get paginated list of products created by the authenticated user
 // @Tags         Products
 // @Produce      json
-// @Security     BearerAuth
-// @Param        pagenum  query     int  false  "Page Number"
-// @Param        limit    query     int  false  "Limit"
+// @Param        pagenum  query     int  false  "Page number (default: 1)"
+// @Param        limit    query     int  false  "Items per page (default: 10)"
 // @Success      200      {array}   models.Product
-// @Failure      401      {object}  map[string]string
-// @Router       /products/all [get]
+// @Failure      401      {object}  map[string]string "Unauthorized"
+// @Failure      500      {object}  map[string]string "Internal server error"
+// @Security     BearerAuth
+// @Router       /products [get]
 func GetAllUserProduct(c *fiber.Ctx) error {
 	const file = "ProductController"
-	userID, ok := c.Locals("userID").(uuid.UUID)
-	if !ok {
+	userIDStr, ok := c.Locals("userID").(string)
+
+if !ok {
+	logger.Log.Error("Package controllers File "+file,
+		zap.String("Function", "ProductInsert"),
+		zap.String("Message", "userID not found or not a string"),
+	)
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
+}
+
+userID, err := uuid.Parse(userIDStr)
+
+if err != nil {
+	logger.Log.Error("Package controllers File "+file,
+		zap.String("Function", "ProductInsert"),
+		zap.String("Message", "Invalid UUID format in userID"),
+		zap.Error(err),
+	)
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID format"})
+}
+
+userido:=c.Locals("userID")
+	//userID, ok := c.Locals("userID").(uuid.UUID)
+	   fmt.Println("---------------> USERIDO",userido)
+	      fmt.Println("---------------> USERID",userID)
+
+		  if !ok {
 		logger.Log.Error("Package controllers File "+file,zap.String("Function", "GetAllUserProduct"),zap.String("Message", "Invalid user ID in context"),
 		)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
@@ -132,6 +180,7 @@ func GetAllUserProduct(c *fiber.Ctx) error {
 	if pageNumber <= 0 {
 		pageNumber = 1
 	}
+
 	limit := c.QueryInt("limit", 10)
 	offset := (pageNumber - 1) * limit
 
@@ -145,5 +194,7 @@ func GetAllUserProduct(c *fiber.Ctx) error {
 
 	logger.Log.Info("Package controllers File "+file,zap.String("Function", "GetAllUserProduct"),zap.String("Message", "Products retrieved successfully"),zap.String("user_id", userID.String()),zap.Int("count", len(products)),
 	)
+	
+	fmt.Println(products)
 	return c.JSON(products)
 }

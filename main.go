@@ -12,9 +12,9 @@ import (
 	"github.com/lokesh2201013/database"
 	"github.com/lokesh2201013/routes"
 
-	_ "github.com/lokesh2201013/docs"             // docs is imported for Swagger setup
-	fiberSwagger "github.com/swaggo/fiber-swagger" // fiber-swagger handler
-	_ "github.com/swaggo/files"                   // swagger embed files (used internally)
+	"github.com/lokesh2201013/docs"             
+	fiberSwagger "github.com/swaggo/fiber-swagger" 
+	_ "github.com/swaggo/files"                   
 )
 
 // @title           Product API
@@ -40,7 +40,12 @@ func main() {
 	app.Use(logger.ZapLogger())
 
 	database.ConnectDB()
-
+    docs.SwaggerInfo.Title = "Product API"
+    docs.SwaggerInfo.Description = "API for managing products with JWT authentication"
+    docs.SwaggerInfo.Version = "1.0"
+    docs.SwaggerInfo.Host = "localhost:8080"
+    docs.SwaggerInfo.BasePath = "/"
+    docs.SwaggerInfo.Schemes = []string{"http"}
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 

@@ -42,7 +42,7 @@ func ConnectDB() {
 	sqlDB.SetMaxIdleConns(10)                
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)  
 
-	
+	db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
 	if err := db.AutoMigrate(&models.User{}, &models.Product{}); err != nil {
 		log.Fatalf("AutoMigrate failed: %v\n", err)
 	}

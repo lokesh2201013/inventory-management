@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -33,7 +34,8 @@ func AuthMiddleware() fiber.Handler {
 
 		claims := token.Claims.(jwt.MapClaims)
 		c.Locals("userID", claims["userID"])
-		c.Locals("email", claims["email"])
+		c.Locals("email", claims["name"])
+		fmt.Println("claims-=-=-=-=-=-=-=-=-=-=-=-=-=->",claims["userID"],claims["name"])
 
 		return c.Next()
 	}

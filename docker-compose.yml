@@ -1,18 +1,27 @@
-version: '3.8'
-
 services:
-  db:
+  postgres:
     image: postgres
-    container_name: inventory-db
+    container_name: postgres_inventory
     restart: always
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: inventory   # ✅ Let Docker create it
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: inventory
+    ports:
+      - "5433:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    image: lokesh220/fi-assignment-app:latest  
+    container_name: go_inventory_app
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: always
 
 volumes:
-  db_data:
+  pgdata:

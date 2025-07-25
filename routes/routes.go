@@ -17,5 +17,10 @@ func AuthRoutes(app *fiber.App) {
 	protected := app.Group("/products", utils.AuthMiddleware())
 	protected.Post("/", controllers.ProductInsert)
 	protected.Put("/:id/quantity",controllers.UpdateQuantity)
-	protected.Get("/all",controllers.GetAllUserProduct)
+	protected.Get("/",controllers.GetAllUserProduct)
+	// GET /products/by-id?product_id=...
+	protected.Get("/by-id", controllers.GetProductByID)       
+	// GET /products/quantity?most=true or ?least=true           
+    protected.Get("/quantity", controllers.GetProductByQuantityExtremes) 
+
 }

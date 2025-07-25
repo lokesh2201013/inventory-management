@@ -1,29 +1,75 @@
 basePath: /
 definitions:
+  models.LoginRequest:
+    properties:
+      password:
+        example: strongPassword123
+        type: string
+      username:
+        example: john_doe
+        type: string
+    type: object
   models.Product:
     properties:
       created_at:
+        example: "2025-07-25T14:00:00Z"
         type: string
       description:
+        example: A bright red cotton t-shirt
         type: string
       id:
+        example: 2c8a21e3-c882-4b40-9f27-35413e5e64e7
         type: string
       image_url:
+        example: https://example.com/images/redshirt.png
         type: string
       name:
+        example: Red T-Shirt
         type: string
       price:
+        example: 19.99
         type: number
       quantity:
+        example: 42
         type: integer
       sku:
+        example: RTS-XL-001
         type: string
       type:
+        example: Clothing
         type: string
       updated_at:
+        example: "2025-07-25T14:30:00Z"
         type: string
       user_id:
+        example: bfc5b2b1-bc0e-4f2b-8c18-7c7a47fdc9c4
         type: string
+    type: object
+  models.QuantityUpdateRequest:
+    properties:
+      quantity:
+        example: 5
+        type: integer
+    type: object
+  models.User:
+    properties:
+      created_at:
+        example: "2025-07-25T14:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      password:
+        example: strongPassword123
+        type: string
+      user_id:
+        example: bfc5b2b1-bc0e-4f2b-8c18-7c7a47fdc9c4
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - email
     type: object
 host: localhost:8080
 info:
@@ -35,15 +81,64 @@ info:
   title: Product API
   version: "1.0"
 paths:
-  /products/all:
-    get:
-      description: Get paginated list of products created by the user
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a registered user using username and password. Returns
+        a JWT token upon success.
       parameters:
-      - description: Page Number
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication successful – JWT access token returned
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request – Invalid JSON or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized – Incorrect password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found – User does not exist
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - Auth
+  /products:
+    get:
+      description: Get paginated list of products created by the authenticated user
+      parameters:
+      - description: 'Page number (default: 1)'
         in: query
         name: pagenum
         type: integer
-      - description: Limit
+      - description: 'Items per page (default: 10)'
         in: query
         name: limit
         type: integer
@@ -62,11 +157,217 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Get all user products
       tags:
       - Products
+    post:
+      consumes:
+      - application/json
+      description: Adds a new product to the database
+      parameters:
+      - description: Product Info
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/models.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created Successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input or fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a new product
+      tags:
+      - Products
+  /products/{id}/quantity:
+    put:
+      consumes:
+      - application/json
+      description: Update the quantity of an existing product by ID
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Quantity Update Payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.QuantityUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update product quantity
+      tags:
+      - Products
+  /products/extreme:
+    get:
+      description: Fetches either the product with the highest or lowest quantity
+        based on query parameter
+      parameters:
+      - description: Set to true to get product with highest quantity
+        example: true
+        in: query
+        name: most
+        type: boolean
+      - description: Set to true to get product with lowest quantity
+        example: false
+        in: query
+        name: least
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Missing or conflicting query parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get product with extreme quantity
+      tags:
+      - Products
+  /products/get:
+    get:
+      description: Retrieves a single product based on the provided UUID in query
+        parameter
+      parameters:
+      - description: Product UUID
+        example: '"d290f1ee-6c54-4b01-90e6-d701748f0851"'
+        in: query
+        name: product_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Missing or invalid product_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a product by ID
+      tags:
+      - Products
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system with a unique username and email.
+        The password is securely hashed before storage.
+      parameters:
+      - description: User registration payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully registered
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request – Invalid JSON or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict – Username or email already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
 securityDefinitions:
   BearerAuth:
     in: header
