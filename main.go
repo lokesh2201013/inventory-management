@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
+	//"github.com/gofiber/fiber/v2/middleware/limiter"
 
 	logger "github.com/lokesh2201013/Logger"
 	"github.com/lokesh2201013/database"
@@ -53,16 +53,7 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	app.Use(limiter.New(limiter.Config{
-		Max:        100,
-		Expiration: 60 * time.Second,
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "Too many requests. Please try again later.",
-			})
-		},
-	}))
-
+	app.Use(tokenBucketMiddleware)
 	routes.AuthRoutes(app)
 
 	port := ":8080"
