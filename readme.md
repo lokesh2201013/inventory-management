@@ -3,6 +3,9 @@
 A secure, high-performance REST API built with **Go** and **Fiber** for managing products. This API features JWT authentication, efficient PostgreSQL integration, Dockerized deployment, and Swagger documentation.
 
 ---
+```
+I have used AI to help me make README and Swagger Docs .Moreover in API i have mainly used AI in correcting my code and for Bolierpate code which I have picked from previous projects
+```
 
 1. **Simplest Way to set Up**
    ```bash
