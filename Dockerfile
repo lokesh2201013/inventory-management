@@ -1,4 +1,4 @@
-# ---------- Build Stage ----------
+
 FROM golang:1.24.2-alpine AS builder
 
 ENV CGO_ENABLED=0 GO111MODULE=on
@@ -12,7 +12,7 @@ COPY . .
 
 RUN go build -o main . && ls -l main
 
-# ---------- Final Stage ----------
+
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates

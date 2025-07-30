@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	//"github.com/gofiber/fiber/v2/middleware/limiter"
-
+    //"github.com/joho/godotenv"
 	logger "github.com/lokesh2201013/Logger"
 	"github.com/lokesh2201013/database"
 	"github.com/lokesh2201013/routes"
@@ -16,7 +16,8 @@ import (
 	fiberSwagger "github.com/swaggo/fiber-swagger" 
 	_ "github.com/swaggo/files"  
 	"sync"      
-	"math"           
+	"math"        
+	"os"   
 )
 
 // @title           Product API
@@ -56,10 +57,16 @@ func main() {
 	app.Use(tokenBucketMiddleware)
 	routes.AuthRoutes(app)
 
-	port := ":8080"
+port := ":" + os.Getenv("PORT")
+if port == ":" {
+    port = ":8080" 
+}
+
 	log.Printf("Server is running on http://localhost%s\n", port)
 	log.Fatal(app.Listen(port))
 }
+
+
 type Bucket struct {
 	Tokens         int
 	LastRefillTime time.Time
@@ -69,7 +76,7 @@ var buckets = make(map[string]*Bucket)
 var mu sync.Mutex
 
 const maxTokens = 100
-const refillRate = 1 // tokens per second
+const refillRate = 1 
 
 func tokenBucketMiddleware(c *fiber.Ctx) error {
 	ip := c.IP()

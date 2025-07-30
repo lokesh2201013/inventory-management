@@ -3,6 +3,13 @@
 A secure, high-performance REST API built with **Go** and **Fiber** for managing products. This API features JWT authentication, efficient PostgreSQL integration, Dockerized deployment, and Swagger documentation.
 
 ---
+## To run the app use 
+```
+docker build -t fiber-app .
+docker run -e PORT=<YOUR PORT> -p <SYSTEM PORT>:<APP PORT> fiber-app
+
+```
+```
 ```
 I have used AI to help me make README and Swagger Docs .Moreover in API i have mainly used AI in correcting my code and for Bolierpate code which I have picked from previous projects
 ```
